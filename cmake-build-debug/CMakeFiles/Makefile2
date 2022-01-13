@@ -53,12 +53,12 @@ CMAKE_BINARY_DIR = /cygdrive/c/myfiles/MyClionProjects/randomizer/cmake-build-de
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/untitled11.dir/all
+all: CMakeFiles/randomizer.dir/all
 
 .PHONY : all
 
 # The main recursive "clean" target.
-clean: CMakeFiles/untitled11.dir/clean
+clean: CMakeFiles/randomizer.dir/clean
 
 .PHONY : clean
 
@@ -68,31 +68,31 @@ preinstall:
 .PHONY : preinstall
 
 #=============================================================================
-# Target rules for target CMakeFiles/untitled11.dir
+# Target rules for target CMakeFiles/randomizer.dir
 
 # All Build rule for target.
-CMakeFiles/untitled11.dir/all:
-	$(MAKE) -f CMakeFiles/untitled11.dir/build.make CMakeFiles/untitled11.dir/depend
-	$(MAKE) -f CMakeFiles/untitled11.dir/build.make CMakeFiles/untitled11.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/cygdrive/c/myfiles/MyClionProjects/randomizer/cmake-build-debug/CMakeFiles --progress-num=1,2 "Built target untitled11"
-.PHONY : CMakeFiles/untitled11.dir/all
+CMakeFiles/randomizer.dir/all:
+	$(MAKE) -f CMakeFiles/randomizer.dir/build.make CMakeFiles/randomizer.dir/depend
+	$(MAKE) -f CMakeFiles/randomizer.dir/build.make CMakeFiles/randomizer.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/cygdrive/c/myfiles/MyClionProjects/randomizer/cmake-build-debug/CMakeFiles --progress-num=1,2 "Built target randomizer"
+.PHONY : CMakeFiles/randomizer.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/untitled11.dir/rule: cmake_check_build_system
+CMakeFiles/randomizer.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /cygdrive/c/myfiles/MyClionProjects/randomizer/cmake-build-debug/CMakeFiles 2
-	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/untitled11.dir/all
+	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/randomizer.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /cygdrive/c/myfiles/MyClionProjects/randomizer/cmake-build-debug/CMakeFiles 0
-.PHONY : CMakeFiles/untitled11.dir/rule
+.PHONY : CMakeFiles/randomizer.dir/rule
 
 # Convenience name for target.
-untitled11: CMakeFiles/untitled11.dir/rule
+randomizer: CMakeFiles/randomizer.dir/rule
 
-.PHONY : untitled11
+.PHONY : randomizer
 
 # clean rule for target.
-CMakeFiles/untitled11.dir/clean:
-	$(MAKE) -f CMakeFiles/untitled11.dir/build.make CMakeFiles/untitled11.dir/clean
-.PHONY : CMakeFiles/untitled11.dir/clean
+CMakeFiles/randomizer.dir/clean:
+	$(MAKE) -f CMakeFiles/randomizer.dir/build.make CMakeFiles/randomizer.dir/clean
+.PHONY : CMakeFiles/randomizer.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

@@ -5,146 +5,151 @@
 #include <omp.h>
 #include <atomic>
 
-#define  STEPS 100000000
-#define CACHE_LINE 64u
-#define MIN 1
-#define MAX 300
-#define SEED 100
+#define SEED 69
 
-using namespace std;
-
-typedef double (*R_t)(unsigned*, size_t);
-typedef struct experiment_result {
-    double result;
-    double time_ms;
-} experiment_result;
-
-experiment_result run_experiment_random(R_t R) {
-    size_t len = 100000;
-    unsigned arr[len];
-    unsigned seed = SEED;
-    double t0 = omp_get_wtime();
-    double Res = R((unsigned *)&arr, len);
-    double t1 = omp_get_wtime();
-    return {
-        Res,
-        t1 - t0
-    };
-}
-
-unsigned num_threads = std::thread::hardware_concurrency();
-
-void set_num_threads(unsigned T) {
-    omp_set_num_threads(T);
-    num_threads = T;
-}
+static unsigned num_treads = std::thread::hardware_concurrency();
 unsigned get_num_threads()
 {
-    return num_threads;
+    return num_treads;
 }
 
-double randomize_arr_single(unsigned* V, size_t n){
-    uint64_t a = 6364136223846793005;
-    unsigned b = 1;
-    uint64_t prev = SEED;
+void set_num_threads(unsigned t)
+{
+    num_treads = t;
+    omp_set_num_threads(t);
+}
+struct experiment_result
+{
+    double Result;
+    double TimeMS;
+};
+
+double Quadratic(double x)
+{
+    return x*x;
+}
+
+
+typedef double (*randomize_function) (unsigned, unsigned*, size_t, unsigned, unsigned);
+
+double RandomizeArraySingle(unsigned seed, unsigned* V, size_t n, unsigned min, unsigned max)
+{
+    uint64_t A = 6364136223846793005;
+    unsigned B = 1;
+
+    uint64_t prev = seed;
+    uint64_t Sum = 0;
+
+    for(unsigned int i = 0; i < n; i++)
+    {
+        uint64_t next = A*prev + B;
+        V[i] = (next % (max - min + 1)) + min;
+        prev = next;
+        Sum += V[i];
+        std::cout<<V[i]<<" ";
+    }
+
+    return (double)Sum/(double)n;
+}
+
+uint64_t pow(uint64_t base, uint64_t exp)
+{
+    uint64_t res = 1;
+    for (unsigned i = 0; i < exp; i++)
+    {
+        res *= base;
+    }
+    return res;
+}
+
+uint64_t getB(unsigned exp, uint64_t A, uint64_t B)
+{
     uint64_t sum = 0;
-
-    for (unsigned i=0; i<n; i++){
-        uint64_t cur = a*prev + b;
-        V[i] = (cur % (MAX - MIN + 1)) + MIN;
-        prev = cur;
-        sum +=V[i];
+    for (unsigned i = 0; i <= exp; i++)
+    {
+        sum += pow(A, i);
     }
 
-    return (double)sum/(double)n;
-}
-
-uint64_t getA(unsigned size, uint64_t a){
-    uint64_t res = 1;
-    for (unsigned i=1; i<=size; i++) res = res * a;
-    return res;
-}
-
-uint64_t getB(unsigned size, uint64_t a){
-    uint64_t* acc = new uint64_t(size);
-    uint64_t res = 1;
-    acc[0] = 1;
-    for (unsigned i=1; i<=size; i++){
-        for (unsigned j=0; j<i; j++){
-            acc[i] = acc[j] * a;
-        }
-        res += acc[i];
+    if (sum == 0) {
+        return B;
+    } else {
+        return B*sum;
     }
-    free(acc);
-    return res;
 }
 
-double randomize_arr_fs(unsigned* V, size_t n){
-    uint64_t a = 6364136223846793005;
-    unsigned b = 1;
+double RandomizeArrayShared(unsigned seed, unsigned* V, size_t n, unsigned min, unsigned max)
+{
+    uint64_t A = 6364136223846793005;
+    uint64_t B = 1;
     unsigned T;
-    uint64_t myA;
-    uint64_t myB;
-    uint64_t sum = 0;
+    uint64_t findA, findB;
+    uint64_t Sum = 0;
 
-#pragma omp parallel shared(V, T, myA, myB)
+#pragma omp parallel shared(T, V, findA, findB)
     {
         unsigned t = (unsigned) omp_get_thread_num();
 #pragma omp single
         {
-            T = (unsigned) get_num_threads();
-            myA = getA(T, a);
-            myB = getB((T - 1), a)*b;
+            T = (unsigned) omp_get_num_threads();
+            findA = pow(A, T);
+            findB = getB(T - 1, A, B);
         }
-        uint64_t prev = SEED;
-        uint64_t cur;
-
-        for (unsigned i=t; i<n; i += T){
-            if (i == t){
-                cur = getA(i+1, a)*prev + getB(i, a) * b;
-            } else {
-                cur = myA*prev + myB;
+        uint64_t prev = seed;
+        uint64_t elem;
+        for (unsigned i = t; i < n; i += T)
+        {
+            if (i == t)
+            {
+                elem = pow(A, i + 1) * prev + getB(i, A, B);
+            } else
+            {
+                elem = findA * prev + findB;
             }
-            V[i] = (cur % (MAX - MIN + 1)) + MIN;
-            prev = cur;
+            V[i] = (elem % (max - min + 1)) + min;
+            prev = elem;
         }
     }
 
-    for (unsigned i=0; i<n;i++)
-        sum += V[i];
+    for (unsigned i = 0; i < n; i++)
+    {
+        Sum += V[i];
+    }
 
-    return (double)sum/(double)n;
+    return (double)Sum/(double)n;
 }
 
-void show_experiment_result_Rand(R_t Rand) {
+experiment_result RandomizerExperiment (randomize_function f)
+{
+    size_t ArrayLength = 500000;
+    unsigned Array[ArrayLength];
+    unsigned seed = SEED;
+
+    double t0, t1, result;
+
+    t0 = omp_get_wtime();
+    result = f(seed, (unsigned *)&Array, ArrayLength, 1, 255);
+    t1 = omp_get_wtime();
+
+    return {result, t1 - t0};
+}
+
+void ShowExperimentResultRand(randomize_function f)
+{
     double T1;
-    uint64_t a = 6364136223846793005;
-    unsigned b = 1;
-
-    double dif = 0;
-    double avg = (MAX + MIN)/2;
-
-    printf("%10s\t%10s\t%10s\t%10s\t%10s\n", "Threads", "Result", "Avg", "Difference", "Acceleration");
-    for (unsigned T = 1; T <= omp_get_num_procs(); ++T) {
+    printf("%10s. %10s %10sms %10s\n", "Threads", "Result", "Time", "Acceleration");
+    for(unsigned T = 1; T <=omp_get_num_procs(); T++)
+    {
+        experiment_result Experiment;
         set_num_threads(T);
-        experiment_result R = run_experiment_random(Rand);
+        Experiment = RandomizerExperiment(f);
         if (T == 1) {
-            T1 = R.time_ms;
+            T1 = Experiment.TimeMS;
         }
-        dif = avg - R.result;
-        printf("%10u\t%10g\t%10g\t%10g\t%10g\n", T, R.result, avg, dif, T1/R.time_ms);
-    };
+        printf("%10d. %10g %10gms %10g\n", T, Experiment.Result, Experiment.TimeMS, T1/Experiment.TimeMS);
+    }
+    printf("\n");
 }
 
 int main() {
-    printf("Rand omp fs\n");
-    show_experiment_result_Rand(randomize_arr_fs);
-    printf("Rand single\n");
-    show_experiment_result_Rand(randomize_arr_single);
-
-    size_t len = 20;
-    unsigned arr[len];
-
-    cout << randomize_arr_single(arr, len) << endl;
-    cout << randomize_arr_fs(arr, len) << endl;
+    ShowExperimentResultRand(RandomizeArrayShared);
 }
